@@ -11,6 +11,7 @@ extern "C" {
 #include "nrf_delay.h"
 #include "nrfx_systick.h"
 #include "nrf_drv_clock.h"
+#include "nrf_drv_power.h"
 #include "nrf_sdh.h"
 #include "nrf_sdh_ble.h"
 #include "nrf_sdh_soc.h"
@@ -23,6 +24,7 @@ extern "C" {
 #include "nrf_fstorage_sd.h"
 #include "fds.h"
 #include "app_timer.h"
+#include "app_util.h"
 }
 #include <algorithm>
 #include <cstring>
@@ -214,7 +216,9 @@ void init() {
     fatal("queues");
   APP_ERROR_CHECK(app_timer_init());
   APP_ERROR_CHECK(fds_register(fdsEvent));
-  if (NRF_UICR->NRFFW[0] != 0xF4000)
+  // Use the same MBR-first/UICR-fallback lookup as FDS below. Bootloaders
+  // using the MBR address can leave the UICR location erased.
+  if (BOOTLOADER_ADDRESS != 0xF4000)
     fatal("unexpected bootloader layout");
   APP_ERROR_CHECK(pm_init());
   uint32_t wait = now();
@@ -343,7 +347,9 @@ int gpsRead() {
   return xStreamBufferReceive(gpsBytes, &b, 1, 0) ? b : -1;
 }
 float batteryVolts() {
-  int16_t sample = 0;
+  // EasyDMA changes this memory outside the C++ abstract machine. Without
+  // volatile, an optimized build can keep the initial zero for the result.
+  alignas(4) volatile int16_t sample = 0;
   NRF_SAADC->ENABLE = 1;
   NRF_SAADC->RESOLUTION = SAADC_RESOLUTION_VAL_12bit;
   NRF_SAADC->OVERSAMPLE = 0;
@@ -462,6 +468,9 @@ extern "C" void vApplicationStackOverflowHook(TaskHandle_t, char *) {
 }
 extern "C" int main() {
   APP_ERROR_CHECK(nrf_drv_clock_init());
+  // app_usbd_init() reuses this driver later. Its first initialization must
+  // happen before SoftDevice enable, or the SDK returns INVALID_STATE.
+  APP_ERROR_CHECK(nrf_drv_power_init(nullptr));
   APP_ERROR_CHECK(nrf_sdh_enable_request());
   uint32_t ram = 0x20006000;
   APP_ERROR_CHECK(nrf_sdh_ble_default_cfg_set(1, &ram));

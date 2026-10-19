@@ -1,10 +1,10 @@
-# Hardware validation — 2026-10-18
+# Hardware validation — updated 2026-10-19
 
 Paths in this document are relative to the repository root. Hardware logs under `build/` are local evidence and are ignored by Git.
 
 ## Zephyr
 
-Flashed through the installed serial DFU bootloader with `scripts/flash.py --rtos zephyr`, after passing host tests, cross-build and image validation. Application-only updates preserved the installed bootloader. The board runs the native Zephyr firmware.
+Flashed through the installed serial DFU bootloader with `scripts/flash.py --rtos zephyr`, after passing host tests, cross-build and image validation. Application-only updates preserved the installed bootloader. These results describe the Zephyr runs before the FreeRTOS checks below.
 
 Verified on the attached M1:
 
@@ -61,17 +61,33 @@ Evidence: `build/button-screen-flash.log`, `build/button-screen-usb-test.log`, `
 
 ## Repeat the USB check
 
-With Zephyr already running and the port printed by `scripts/m1.py ports`:
+With the selected firmware already running and the port printed by `scripts/m1.py ports`:
 
 ```sh
 source .venv/bin/activate
-python scripts/hardware_usb.py --port /dev/cu.usbmodemXXXX
+python scripts/hardware_usb.py --port /dev/cu.usbmodemXXXX --rtos zephyr
+# For FreeRTOS, use --rtos freertos. To check a particular build's version too:
+python scripts/hardware_usb.py --port /dev/cu.usbmodemXXXX --rtos freertos \
+  --manifest dist/freertos/thinknode-m1-freertos-manifest.json \
+  --report build/hardware/freertos-usb-report.json
 ```
 
 This is an explicit hardware test, separate from the pre-flash gate. It enables dongle mode, exercises the backlight commands, and leaves dongle mode selected. It does not provision credentials or initiate a LoRaWAN transmission. JSON evidence is saved to `build/hardware/usb-report.json`; the run transcript is `build/zephyr-usb-test.log` when redirected by the operator. Flash transcript: `build/zephyr-flash.log`. Build reports and firmware manifests identify the tested image hashes. Bluetooth coexistence observations are in `build/hardware/usb-ble-coexistence.json`; the combined acceptance record, including user-confirmed iPhone results, is `build/hardware/acceptance.json`. These local logs are ignored by Git.
+
+The test rejects an unexpected RTOS before changing device settings. `--manifest` also checks the reported version and records the supplied manifest in the report. Supply the manifest from the image actually uploaded; a version match alone does not prove a binary hash. Without this option, no local build manifest is attached to the result. Regression tests cover mismatched RTOS, manifest target and version.
 
 For iPhone testing, connect in Bluefruit Connect, enter the displayed passkey, open UART, and send `status;`, `stream 5;`, and `page 2;`. Verify readings and the screen change, then disconnect/reconnect and repeat `status;`. Both the secure BLE subscription and USB can operate at once. After changing between old and new Bluetooth stacks, forget a stale phone bond if pairing fails.
 
 ## FreeRTOS
 
-Cross-build and host tests pass. No FreeRTOS image has been flashed or hardware-tested in this session.
+On 2026-10-19, the published `v0.1.0-rc.1` FreeRTOS package passed artifact validation and uploaded successfully, but did not appear over USB or Bluetooth. The operator observed the previous e-paper image and a blinking LED. Double-clicking reset restored the existing bootloader; no bootloader, SoftDevice or provisioning region was erased.
+
+The corrected source initializes the Nordic power driver before enabling the SoftDevice. Otherwise `app_usbd_init()` tries to initialize that driver after Bluetooth is enabled and the SDK rejects it. The startup flash-layout check also now uses Nordic's MBR-first/UICR-fallback bootloader-address lookup, matching FDS. The address-check change alone did not restore startup; USB appeared after correcting power-driver initialization.
+
+The first USB run then rejected a battery value of `-1.00V`. The ADC DMA buffer is now aligned and volatile so optimized code reads the hardware-written sample. The next run reported approximately 4.21 V. USB product/manufacturer macros were corrected for SDK 15.3 so the device identifies as `ThinkNode M1 FreeRTOS` instead of the SDK demo.
+
+The final local `dev` image passed all **13 USB checks**, including RTOS/version identity, dongle mode and GPS standby, battery plausibility, backlight commands, unjoined-send rejection, fragmented/oversized command handling, streaming, and serial close/reopen behavior. Native USB bootloader entry also worked for the subsequent application-only update. Bluetooth UART advertising was observed. The device was returned to tracker mode, overview page 0, with the light enabled and healthy storage.
+
+Authenticated iPhone UART, physical buttons, screen blank/wake, and battery-only behavior are awaiting operator confirmation for this FreeRTOS build. The radio/GPS/current-consumption limitations above still apply. These are source fixes and local test results, **not a replacement of the existing `v0.1.0-rc.1` assets**. Release manifests still say `hardware_validated: false`.
+
+Local evidence: `build/freertos-release-flash.log`, `build/freertos-power-init-flash.log`, `build/freertos-battery-flash.log`, `build/freertos-battery-usb-test.log`, `build/hardware/freertos-battery-usb-report.json` and `build/hardware/freertos-acceptance.json`. The acceptance record retains the exact flashed package manifest and separates automated checks from operator confirmation.

@@ -15,7 +15,9 @@ This is preview firmware. The tested hardware and remaining validation are docum
 | Target | Build and host tests | Device validation |
 |---|---|---|
 | Zephyr | Passing | USB dongle commands, streaming, serial reconnection, authenticated iPhone Bluetooth, battery reporting, backlight controls and two-button screen blanking/waking |
-| FreeRTOS | Passing | Not yet tested on the M1 |
+| FreeRTOS | Passing | USB startup, dongle commands, streaming, serial reconnection, battery reporting and USB backlight commands; Bluetooth advertising observed |
+
+**FreeRTOS release caveat:** the FreeRTOS image published in `v0.1.0-rc.1` failed startup on the M1. The source now includes startup and battery-reading fixes, tested locally on 2026-10-19. Those fixes are not in the existing release assets. Build the corrected source for FreeRTOS; see [hardware validation and limitations](docs/HARDWARE_TESTING.md#freertos).
 
 Actual LoRaWAN join/uplink/downlink delivery, outdoor GPS acquisition, long-duration operation and current consumption remain to be validated. Release manifests retain `hardware_validated: false`. Passing a build or host simulation does not establish field readiness.
 

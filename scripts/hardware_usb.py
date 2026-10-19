@@ -10,11 +10,16 @@ from serial.tools import list_ports
 from m1 import Session
 
 
-def test(port_name, report_path):
+def test(port_name, report_path, rtos='zephyr', manifest_path=None):
+    if rtos not in ('zephyr', 'freertos'):
+        raise ValueError('Select zephyr or freertos')
+    manifest = json.loads(Path(manifest_path).read_text()) if manifest_path else None
+    if manifest is not None and (manifest.get('rtos') != rtos or not manifest.get('version')):
+        raise ValueError('Manifest does not match the selected RTOS or has no version')
     port_info = next((p for p in list_ports.comports() if p.device == port_name), None)
     if not port_info or (port_info.vid, port_info.pid) != (0x239A, 0x4405):
         raise RuntimeError('Select an M1 application USB port')
-    report = {'usb_passed': False, 'serial': port_info.serial_number,
+    report = {'usb_passed': False, 'serial': port_info.serial_number, 'expected_rtos': rtos,
               'bluetooth_pairing': 'not tested by this script', 'lorawan': 'not tested', 'events': [], 'checks': []}
     def emit(event):
         report['events'].append(event)
@@ -29,7 +34,9 @@ def test(port_name, report_path):
             session = Session(port, emit)
             initial = session.handshake()
             report['rtos'], report['version'] = initial['rtos'], initial['version']
-            check(initial['rtos'] == 'zephyr', 'Zephyr protocol handshake')
+            check(initial['rtos'] == rtos, ('Zephyr' if rtos == 'zephyr' else 'FreeRTOS') + ' protocol handshake')
+            if manifest is not None:
+                check(initial['version'] == manifest['version'], 'Firmware version matches supplied manifest')
             session.command('stream off')
             session.command('mode dongle')
             status = session.command('status', 'status')
@@ -81,8 +88,9 @@ def test(port_name, report_path):
             else:
                 raise RuntimeError('Unexpected event after reopening: '+event['type'])
         report['usb_passed']=True
-        manifest=Path(__file__).resolve().parents[1]/'dist/zephyr/thinknode-m1-zephyr-manifest.json'
-        if manifest.exists():report['firmware_manifest']=json.loads(manifest.read_text())
+        # Associate only an explicitly supplied, version-checked manifest. A local
+        # dist folder may describe a different build from the one on the device.
+        if manifest is not None: report['firmware_manifest'] = manifest
         return report
     finally:
         report_path.parent.mkdir(parents=True,exist_ok=True)
@@ -92,8 +100,10 @@ def test(port_name, report_path):
 if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--port',required=True)
+    parser.add_argument('--rtos',choices=('zephyr','freertos'),default='zephyr')
+    parser.add_argument('--manifest',type=Path,help='Optional manifest for the installed image; checks RTOS and version')
     parser.add_argument('--report',type=Path,default=Path('build/hardware/usb-report.json'))
     args=parser.parse_args()
-    try:test(args.port,args.report)
+    try:test(args.port,args.report,args.rtos,args.manifest)
     except (OSError,ValueError,RuntimeError,TimeoutError) as error:
         print('HARDWARE TEST FAILED: '+str(error),file=sys.stderr);sys.exit(1)

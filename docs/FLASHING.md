@@ -1,6 +1,6 @@
 # Flashing, migration, and recovery
 
-Zephyr was flashed and tested on the physical M1 on 2026-10-18. USB command/stream tests and iPhone Bluefruit pairing, readings and screen-control checks passed. FreeRTOS has not been flashed; LoRaWAN traffic still needs a gateway/server. See [hardware validation](HARDWARE_TESTING.md) for the tested scope.
+Zephyr USB and iPhone Bluefruit checks passed on the physical M1 on 2026-10-18. Corrected FreeRTOS source passed USB command/stream/reconnection checks on 2026-10-19. The published FreeRTOS `v0.1.0-rc.1` image failed startup and does not contain those corrections; build current source when testing FreeRTOS. LoRaWAN traffic still needs a gateway/server. See [hardware validation](HARDWARE_TESTING.md) for the tested scope and outstanding phone/button checks.
 
 Both targets use the inspected Elecrow bootloader, S140 6.1.1 (FWID `0xB6`), application start `0x26000`, and bootloader start `0xF4000`. Images deliberately stop before native data storage at `0xE5000`. Do not use mass erase or a generic nRF52840 DK full-flash image: those can erase the installed bootloader and provisioning data.
 

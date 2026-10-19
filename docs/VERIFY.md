@@ -24,6 +24,7 @@ The first command runs host tests without touching USB. The second additionally 
 - Independent USB/BLE subscriptions, connection loss, and stream timer rollover.
 - Actual shared reply formatter against a fake transport: byte-for-byte USB status/response compatibility, readable BLE fields, unavailable/stale GPS labels, 32-character line bounds, long-token preservation, truncation boundaries and interrupted output.
 - USB client framing, interleaved downlinks/TX completion, timeouts without duplicate sends, malformed records, and native protocol handshake.
+- Hardware-test identity checks reject an unexpected RTOS or manifest version before sending commands that change device state.
 - Counter reservation carries, exhaustion without wraparound, RadioLib checksum format, and corrupt-journal fallback.
 - ChirpStack payload decoder checks.
 - Package rejection checks for protected flash addresses, wrong UF2 family, duplicate/corrupt blocks, bootloader components, bad DFU initialization data, and mismatched payloads.
@@ -38,6 +39,6 @@ GitHub workflows are also suitable for static checking with [actionlint](https:/
 
 ## What this cannot prove
 
-Host tests do not emulate the complete nRF52840, S140, Bluetooth radio, SX1262 timing, analog battery circuit, GPS hardware, or physical e-paper waveforms. A successful cross-build establishes compile/link compatibility, not runtime compatibility. Zephyr has passed the USB and iPhone Bluefruit functional checks recorded in [HARDWARE_TESTING.md](HARDWARE_TESTING.md). FreeRTOS remains untested on hardware.
+Host tests do not emulate the complete nRF52840, S140, Bluetooth radio, SX1262 timing, analog battery circuit, GPS hardware, or physical e-paper waveforms. A successful cross-build establishes compile/link compatibility, not runtime compatibility. Zephyr has passed USB and iPhone Bluefruit functional checks. Corrected FreeRTOS source has passed 13 USB checks after hardware testing exposed startup and ADC issues missed by the host checks. See [HARDWARE_TESTING.md](HARDWARE_TESTING.md) for exact versions, evidence and pending checks.
 
 Before field use, test each OS on the M1 for startup and USB recovery; USB dongle mode, streaming, unplug/reconnect and downlink delivery; iPhone pairing/reconnection; `status;`/`stream 5;`; physical buttons and light timeout; partial refresh and ghosting; physical GPS switch and standby; and battery ADC readings. With a working AU915 gateway/server, check join, uplink, downlink, reboot/session restore, and counter continuity. Measure idle/GPS/radio/connected currents before claiming battery improvements.
