@@ -17,7 +17,7 @@ This is preview firmware. The tested hardware and remaining validation are docum
 | Zephyr | Passing | USB dongle commands, streaming, serial reconnection, authenticated iPhone Bluetooth, battery reporting, backlight controls and two-button screen blanking/waking |
 | FreeRTOS | Passing | USB dongle commands, streaming, serial reconnection, authenticated iPhone Bluetooth and reconnection, battery reporting, mode button and screen blank/wake |
 
-**FreeRTOS release caveat:** the FreeRTOS image published in `v0.1.0-rc.1` failed startup on the M1. The source now includes startup, battery-reading and Bluetooth connection fixes, tested locally on 2026-10-19. Those fixes are not in the existing release assets. Build the corrected source for FreeRTOS; see [hardware validation and limitations](docs/HARDWARE_TESTING.md#freertos).
+**Use [v0.1.0-rc.2](https://github.com/bootstrap314/thinknode_m1-infovore/releases/tag/v0.1.0-rc.2) for FreeRTOS.** It includes startup, battery-reading and Bluetooth connection fixes tested locally on 2026-10-19. The older `v0.1.0-rc.1` FreeRTOS image failed startup on the M1 and remains unchanged. See [hardware validation and limitations](docs/HARDWARE_TESTING.md#freertos).
 
 Actual LoRaWAN join/uplink/downlink delivery, outdoor GPS acquisition, long-duration operation and current consumption remain to be validated. Release manifests retain `hardware_validated: false`. Passing a build or host simulation does not establish field readiness.
 

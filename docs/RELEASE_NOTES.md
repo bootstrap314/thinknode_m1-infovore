@@ -1,4 +1,4 @@
-Native Zephyr and FreeRTOS firmware for the Elecrow ThinkNode M1, converting a Meshtastic device into a dedicated AU915 LoRaWAN tracker/messenger for a private ChirpStack deployment.
+Version `v0.1.0-rc.2` includes native Zephyr and FreeRTOS firmware for the Elecrow ThinkNode M1, converting a Meshtastic device into a dedicated AU915 LoRaWAN tracker/messenger for a private ChirpStack deployment.
 
 Changes since `v0.1.0-rc.1`: correct FreeRTOS power-driver initialization before Bluetooth startup, support the SDK's MBR/UICR bootloader-address lookup, fix optimized ADC DMA battery readings, and use the correct USB product identity. Bluetooth now answers phone data-length/PHY negotiation requests and tolerates an already-busy security procedure. The USB acceptance tool checks the selected RTOS and optionally the installed version against a supplied manifest. The existing `v0.1.0-rc.1` FreeRTOS asset failed startup; it has not been replaced with these fixes.
 
@@ -12,4 +12,4 @@ Choose the asset named `zephyr` or `freertos`. Both implement the same Bluefruit
 
 Both targets pass the automated build and verification gates. The Zephyr preview passed initial M1 USB dongle and iPhone Bluefruit pairing, status, streaming and screen-control checks, including concurrent USB/Bluetooth use. Corrected FreeRTOS source passed 13 USB checks with authenticated Bluetooth active, and the operator confirmed iPhone pairing, UART readings/streaming, screen control and reconnection. Mode switching and screen blank/wake were also confirmed on FreeRTOS. Actual LoRaWAN traffic, long-duration operation and current consumption still require hardware acceptance testing; no gateway/server was available for the preview checks. The manifest records `hardware_validated: false`; see `docs/HARDWARE_TESTING.md` for the tested scope and limitations. See the tagged README and flashing guide before installing, especially when migrating existing LoRaWAN credentials/counters.
 
-This release is created as a draft for manual review/publication. Verify the corresponding SHA256 list before flashing.
+Hardware checks used local development images containing these fixes. GitHub Actions builds both release variants from the signed tag with the release version string. Verify the corresponding SHA256 list before flashing.
