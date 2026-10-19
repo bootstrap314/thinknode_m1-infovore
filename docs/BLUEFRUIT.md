@@ -2,6 +2,8 @@
 
 Install Adafruit Bluefruit Connect on iPhone. **USB dongle mode keeps Bluetooth enabled; no mode change is needed.** In the app, scan for **ThinkNode-M1** and tap **Connect**. Enter the six-digit passkey shown on the M1 into the iPhone pairing prompt, then open **UART**. Press button 1 to illuminate the screen if needed. The firmware implements Nordic UART Service directly in the selected OS. Adafruit's phone application is a client; no Bluefruit/Arduino firmware library is used.
 
+There is no separate pairing mode or button gesture: an unconnected M1 advertises automatically in tracker and USB dongle modes. Connect from Bluefruit; if the screen is blank when a code is needed, press either button to reveal it.
+
 The RX characteristic and notification subscription require authenticated encryption. Pairing uses a displayed passkey; bond records persist. After changing RTOS, use iPhone **Settings → Bluetooth → Forget This Device** if the phone holds a bond/cache belonging to the other stack, then pair again. Credentials and LoRaWAN state are separate from BLE bonds.
 
 In the UART view, choose **Text** and **ASCII**. Timestamp view shows individual Bluetooth packets and can split words even when the firmware sends deliberate line breaks. Bluetooth status and streaming use short, labelled lines (at most 32 characters), with a blank line between reports. Help, diagnostics and received downlinks also use short lines. Very narrow screens or large accessibility text can still wrap them.
@@ -48,7 +50,7 @@ Received application bytes appear under `Downlink`, with separate `Port:`, `Byte
 
 Streaming reports cached local measurements. It is not a high-rate remote sensor stream; LoRaWAN is designed for small, intermittent messages. GPS position can be last-known: read `Fix`, `GPS` and `Fix age` together. Without an acquired position, the phone shows `Position: no fix`; a stored position without a current fix is labelled `last known`. USB exposes the equivalent `gps_fix`, `gps_power` and `fix_age_s` fields. Battery percentage is a voltage-based estimate, not a calibrated fuel gauge.
 
-On 2026-10-18, the native Zephyr build passed iPhone pairing and Bluefruit UART checks: `status;` returned readings, `stream 5;` streamed readings, and `page 2;` changed the screen. These checks passed while USB dongle mode was active; USB status also reflected the phone-selected page. FreeRTOS BLE remains untested on hardware. See [hardware validation](HARDWARE_TESTING.md) for the tested scope.
+On 2026-10-18, the native Zephyr build passed iPhone pairing and Bluefruit UART checks: `status;` returned readings, `stream 5;` streamed readings, and `page 2;` changed the screen. These checks passed while USB dongle mode was active; USB status also reflected the phone-selected page. On 2026-10-19, corrected FreeRTOS source passed the same phone checks plus disconnect/reconnect, with USB checks passing concurrently. The FreeRTOS fixes are newer than the published `v0.1.0-rc.1` assets. See [hardware validation](HARDWARE_TESTING.md) for exact evidence and limits.
 
 The same commands work on [USB](USB_DONGLE.md), including an independent local status stream.
 

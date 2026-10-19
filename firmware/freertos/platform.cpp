@@ -83,7 +83,8 @@ void bleEvent(const ble_evt_t *e, void *) {
     secured = false;
     subscribed = false;
     uint32_t err = pm_conn_secure(conn, false);
-    if (err != NRF_SUCCESS)
+    // A central may already have started securing the link.
+    if (err != NRF_SUCCESS && err != NRF_ERROR_BUSY)
       sd_ble_gap_disconnect(conn, BLE_HCI_AUTHENTICATION_FAILURE);
     break;
   }
@@ -102,6 +103,16 @@ void bleEvent(const ble_evt_t *e, void *) {
     sd_ble_gap_conn_param_update(conn,
                                  &e->evt.gap_evt.params.conn_param_update_request.conn_params);
     break;
+  case BLE_GAP_EVT_DATA_LENGTH_UPDATE_REQUEST:
+    // There is no nrf_ble_gatt instance to answer this on our behalf. Let
+    // SoftDevice choose lengths that fit the configured connection buffers.
+    APP_ERROR_CHECK(sd_ble_gap_data_length_update(e->evt.gap_evt.conn_handle, nullptr, nullptr));
+    break;
+  case BLE_GAP_EVT_PHY_UPDATE_REQUEST: {
+    const ble_gap_phys_t phys{BLE_GAP_PHY_AUTO, BLE_GAP_PHY_AUTO};
+    APP_ERROR_CHECK(sd_ble_gap_phy_update(e->evt.gap_evt.conn_handle, &phys));
+    break;
+  }
   case BLE_GATTS_EVT_EXCHANGE_MTU_REQUEST:
     sd_ble_gatts_exchange_mtu_reply(conn, 23);
     break;
