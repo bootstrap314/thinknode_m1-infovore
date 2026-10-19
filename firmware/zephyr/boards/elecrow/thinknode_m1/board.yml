@@ -1,0 +1,6 @@
+board:
+  name: thinknode_m1
+  full_name: Elecrow ThinkNode M1
+  vendor: elecrow
+  socs:
+    - name: nrf52840

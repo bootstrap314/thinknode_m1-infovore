@@ -1,0 +1,39 @@
+name: Native firmware verification
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  secrets:
+    uses: ./.github/workflows/secrets.yml
+  verify:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        rtos: [zephyr, freertos]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.12'
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y clang device-tree-compiler
+          python -m pip install -r requirements-dev.txt
+      - name: Native verification
+        env:
+          RTOS: ${{ matrix.rtos }}
+        run: |
+          python scripts/bootstrap.py --rtos "$RTOS"
+          python scripts/verify.py --build --rtos "$RTOS" --commit "$GITHUB_SHA"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: checked-${{ matrix.rtos }}
+          path: dist/${{ matrix.rtos }}/
+          if-no-files-found: error

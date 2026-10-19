@@ -1,0 +1,24 @@
+{
+  "radiolib": {"url": "https://github.com/jgromes/RadioLib.git", "revision": "2325a38a89dd0f0e402c19f67fe910111da1e246", "version": "7.8.1", "path": "RadioLib"},
+  "freertos": {"url": "https://github.com/FreeRTOS/FreeRTOS-Kernel.git", "revision": "0adc196d4bd52a2d91102b525b0aafc1e14a2386", "version": "11.2.0", "path": "FreeRTOS-Kernel"},
+  "zephyr": {"url": "https://github.com/zephyrproject-rtos/zephyr.git", "revision": "dccb09599635bdff17633fa7e9dab014b91dce90", "version": "4.4.2", "path": "zephyr"},
+  "nrf5_sdk": {"url": "https://developer.nordicsemi.com/nRF5_SDK/nRF5_SDK_v15.x.x/nRF5_SDK_15.3.0_59ac345.zip", "sha256": "9c9307d757d109007f2fcc4e547ac10b1a9fd9faa477e8dbf3f7e1624c4801a5", "version": "15.3.0", "path": "nRF5_SDK_15.3.0_59ac345"},
+  "toolchains": {
+    "Darwin-arm64": {
+      "arm_name": "arm-gnu-toolchain-14.2.rel1-darwin-arm64-arm-none-eabi",
+      "arm_sha256": "c7c78ffab9bebfce91d99d3c24da6bf4b81c01e16cf551eb2ff9f25b9e0a3818",
+      "zephyr_host": "macos-aarch64",
+      "zephyr_minimal_sha256": "867063901f39528a6175a80ebc20367bd6cb440593e7e2650eda30392f1f6b65",
+      "zephyr_arm_sha256": "4008edb5d4840cd994aedd7f1309bfb63e7243729d57839ebf1cc83c1f17c886"
+    },
+    "Linux-x86_64": {
+      "arm_name": "arm-gnu-toolchain-14.2.rel1-x86_64-arm-none-eabi",
+      "arm_sha256": "62a63b981fe391a9cbad7ef51b17e49aeaa3e7b0d029b36ca1e9c3b2a9b78823",
+      "zephyr_host": "linux-x86_64",
+      "zephyr_minimal_sha256": "ca9bc0ff66fafca1dac9d592a36d953cf16d096a9d09b1c0357f021cf9f6a7eb",
+      "zephyr_arm_sha256": "21b85981cb5a1818d9bc53d82af80f208946ec038b982ff1907287572ed3a634"
+    }
+  },
+  "zephyr_sdk_version": "1.0.1",
+  "arm_gcc_version": "14.2.rel1"
+}

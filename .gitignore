@@ -1,0 +1,12 @@
+# Project-local dependencies and generated artifacts
+.deps/
+.tools/
+.venv/
+build/
+dist/
+private/
+include/secrets.h
+__pycache__/
+*.pyc
+.DS_Store
+.vscode/

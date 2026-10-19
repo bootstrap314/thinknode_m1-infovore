@@ -1,0 +1,113 @@
+name: Manual firmware release
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing pushed tag (e.g. v0.1.0-rc.1)'
+        required: true
+        type: string
+      prerelease:
+        description: 'Mark the draft as a prerelease'
+        type: boolean
+        default: true
+permissions:
+  contents: read
+concurrency:
+  group: firmware-release-${{ inputs.tag }}
+  cancel-in-progress: false
+jobs:
+  resolve:
+    runs-on: ubuntu-24.04
+    outputs:
+      commit: ${{ steps.tag.outputs.commit }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: true
+      - name: Resolve the exact existing remote tag
+        id: tag
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          commit=$(python3 scripts/release.py resolve --tag "$RELEASE_TAG")
+          echo "commit=$commit" >> "$GITHUB_OUTPUT"
+  secrets:
+    needs: resolve
+    uses: ./.github/workflows/secrets.yml
+    with:
+      ref: ${{ needs.resolve.outputs.commit }}
+  build:
+    needs: resolve
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        rtos: [zephyr, freertos]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ needs.resolve.outputs.commit }}
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.12'
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang device-tree-compiler
+          python -m pip install -r requirements-dev.txt
+      - name: Fetch pinned native dependencies
+        env:
+          RTOS: ${{ matrix.rtos }}
+        run: python scripts/bootstrap.py --rtos "$RTOS"
+      - name: Test, build, and validate application-only firmware
+        env:
+          RTOS: ${{ matrix.rtos }}
+          RELEASE_TAG: ${{ inputs.tag }}
+          SOURCE_COMMIT: ${{ needs.resolve.outputs.commit }}
+        run: |
+          python scripts/verify.py --build --rtos "$RTOS" --version "$RELEASE_TAG" --commit "$SOURCE_COMMIT"
+          mv "dist/$RTOS/SHA256SUMS.txt" "dist/$RTOS/SHA256SUMS-$RTOS.txt"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: firmware-${{ matrix.rtos }}
+          path: dist/${{ matrix.rtos }}/
+          if-no-files-found: error
+          retention-days: 14
+  draft:
+    needs: [resolve, build, secrets]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      # Keep release orchestration from the workflow revision; build only the tag's source.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          pattern: firmware-*
+          merge-multiple: true
+          path: release-assets
+      - name: Verify both targets and ensure the tag has not moved
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+          SOURCE_COMMIT: ${{ needs.resolve.outputs.commit }}
+        run: |
+          test "$(python3 scripts/release.py resolve --tag "$RELEASE_TAG")" = "$SOURCE_COMMIT"
+          python3 scripts/release.py verify --folder release-assets --tag "$RELEASE_TAG" --commit "$SOURCE_COMMIT"
+      - name: Create a draft release for manual publication
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
+          SOURCE_COMMIT: ${{ needs.resolve.outputs.commit }}
+          PRERELEASE: ${{ inputs.prerelease }}
+        run: |
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            echo 'A release already exists for this tag. Refusing to overwrite it.' >&2
+            exit 1
+          fi
+          cp docs/RELEASE_NOTES.md release-notes.md
+          printf '\nTag: `%s`\nCommit: `%s`\n' "$RELEASE_TAG" "$SOURCE_COMMIT" >> release-notes.md
+          flags=()
+          if [ "$PRERELEASE" = true ]; then flags+=(--prerelease); fi
+          gh release create "$RELEASE_TAG" release-assets/* --verify-tag --target "$SOURCE_COMMIT" \
+            --draft "${flags[@]}" --title "ThinkNode M1 $RELEASE_TAG" --notes-file release-notes.md

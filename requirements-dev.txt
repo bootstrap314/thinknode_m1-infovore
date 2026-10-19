@@ -1,0 +1,8 @@
+# Python 3.12; development tools only. No wiring runtime or PlatformIO.
+west==1.5.0
+cmake==4.4.4
+ninja==1.13.2
+PyYAML==6.0.3
+pyelftools==0.33
+intelhex==2.3.0
+pyserial==3.5

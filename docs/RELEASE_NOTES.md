@@ -1,0 +1,13 @@
+Native Zephyr and FreeRTOS firmware for the Elecrow ThinkNode M1, converting a Meshtastic device into a dedicated AU915 LoRaWAN tracker/messenger for a private ChirpStack deployment.
+
+Hold button 1 for about one second to switch tracker/USB dongle mode; short taps toggle the light. The M1 display uses 16-pixel labels and values, with battery voltage and percentage and no device-name/RTOS headings. Mode is shown on one line as `Mode: Track` or `Mode: Dongle`, using mixed case. Firmware identity remains available through `status;`.
+
+Bluetooth replies use short, labelled lines for phone reading; choose Text / ASCII in Bluefruit UART. The USB single-line machine protocol is unchanged.
+
+Hold both buttons together for two seconds to blank the screen and turn off its light before switching off with the rotary knob. Wait for erasure to finish before cutting power. Tracking and USB/Bluetooth remain active while blank; a later press of either button restores the display and light without changing mode or requesting a join. Page/clean commands also restore the display. Host tests cover the gesture, and the operator confirmed blanking, persistence beyond the background refresh interval, and waking without changing mode on the Zephyr M1.
+
+Choose the asset named `zephyr` or `freertos`. Both implement the same Bluefruit Connect UART commands and native display/GPS/power policies. Images are application-only and contain no private LoRaWAN credentials; provision after first installation.
+
+Both targets pass the automated build and verification gates. The Zephyr preview passed initial M1 USB dongle and iPhone Bluefruit pairing, status, streaming and screen-control checks, including concurrent USB/Bluetooth use. FreeRTOS remains build-tested only. Actual LoRaWAN traffic, long-duration operation and current consumption still require hardware acceptance testing; no gateway/server was available for the preview checks. The manifest records `hardware_validated: false`; see `docs/HARDWARE_TESTING.md` for the tested scope and limitations. See the tagged README and flashing guide before installing, especially when migrating existing LoRaWAN credentials/counters.
+
+This release is created as a draft for manual review/publication. Verify the corresponding SHA256 list before flashing.
